@@ -1,0 +1,26 @@
+#lang racket
+
+
+
+(define smart-product
+  (lambda (ls)
+    (call-with-current-continuation
+     (lamba (cc)
+            (let helper ((ls ls))
+              (cond ((null? ls) 1)
+                    ((zero? (car ls)) (cc 0))
+                    (else
+                     (ping "down" (car ls))
+                     (let ((answer ((helper (csr ls)))))
+                       (ping "up" (car ls))
+                       (* (car ls) answer)))))))))
+                     
+(define zombie #f)
+(define factorial
+  (lambda (n)
+    (cond ((zero? n) 1)
+          (call-with-current-continuation
+           (lambda (cc)
+             (set! zombie cc)
+             1))
+          (else (* n (factorial (- n 1)))))))

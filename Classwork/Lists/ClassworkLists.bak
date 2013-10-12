@@ -1,0 +1,8 @@
+#lang racket
+
+(define accumulate
+  (lambda (op base term ls)
+    (if (null? ls)
+        base
+        (op (term (car ls))
+            (accumulate op base term (cdr ls))))))

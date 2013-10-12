@@ -1,0 +1,12 @@
+#lang racket
+(requre racket/stream)
+
+(define freeze
+  (lambda (expr)
+    (lambda ()
+      expr)))
+
+(define naturals
+  (let run4ever ((n o))
+    (stream-cons n
+                 (run4ever (+ n 1)))))

@@ -1,0 +1,20 @@
+Testing
+
+> (triangular 0)
+0
+> (triangular 1)
+1
+> (triangular 10)
+55
+> (square-triangular 0)
+0
+> (square-triangular 1)
+1
+> (square-triangular 10)
+385
+> (generalized-triangular 0 square)
+0
+> (generalized-triangular 1 square)
+1
+> (generalized-triangular 10 square)
+385

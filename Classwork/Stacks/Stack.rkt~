@@ -1,0 +1,21 @@
+#lang racket
+
+(define writeln
+  (lambda (stuff)
+    (write stuff)
+    (newline)))
+
+(define make-stack
+  (lambda ()
+    (let ((stack '()))
+      (letrec
+          ((this
+            (lambda message
+              (cond ((null? message) (writeln "No Arguments"))
+                     (else
+                      (case (car message)
+                        ((show) stack)
+                        ((empty?) (null? stack))
+                        ((error) (writeln "Error") (writeln (cadr message)))
+                        (else (writeln "Uknown Message"))))))))
+        this))))

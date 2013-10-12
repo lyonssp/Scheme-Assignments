@@ -1,0 +1,15 @@
+#lang racket
+
+(define triangular
+  (lambda (n)
+    (/ (* n (+ n 1)) 2)))
+
+(define square-triangular
+  (lambda (n)
+    (/ (* n (+ n 1) (+ (* 2 n) 1)) 6)))
+
+(define generalized-triangular
+  (lambda (n f)
+    (if (= n 0)
+        0
+        (generalized-triangular (- n 1) f))))

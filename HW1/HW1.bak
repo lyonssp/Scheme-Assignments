@@ -1,0 +1,19 @@
+#lang racket
+
+(define whos-on-first-loop 
+	  (lambda (old-context)
+	    (let ((costellos-line (read)))
+	      (let ((new-context (get-context costellos-line old-context)))
+	        (let ((strong-reply (try-strong-cues costellos-line)))
+	          (let ((weak-reply (try-weak-cues costellos-line new-context))) 
+	               (cond ((not (null? strong-reply))
+	                      (writeln strong-reply)
+	                      (whos-on-first-loop (get-context strong-reply new-context)))
+	                     ((not (null? weak-reply))
+	                      (writeln weak-reply)
+			      (whos-on-first-loop (get-context weak-reply new-context)))
+	                     ((wants-to-end? costellos-line)
+	                      (wrap-it-up))
+	                     (else 
+	                      (writeln (hedge))
+	                      (whos-on-first-loop new-context)))))))))

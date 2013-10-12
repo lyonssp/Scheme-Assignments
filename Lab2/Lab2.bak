@@ -1,0 +1,5 @@
+#lang racket
+
+(define length
+  (lambda (ls)
+    (accumulate + 0 (lambda(x) 1) ls)))

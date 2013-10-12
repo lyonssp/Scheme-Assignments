@@ -1,0 +1,97 @@
+#lang racket
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Streams (infinite lists)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(require racket/stream)
+
+; macros (MIT Scheme to Racket)
+; cons-stream ==> stream-cons
+(define stream-null? stream-empty?)
+(define stream-car stream-first)
+(define stream-cdr stream-rest)
+(define null-stream empty-stream)
+
+
+; defining a stream (infinite list) of natural numbers
+; uses "lazy" evaluation
+(define naturals
+  (let helper ((n 0))
+       (stream-cons n
+		    (helper (+ n 1)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; mutators for stream and list
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; my-stream->list
+; constructs a list of the first n items from a stream
+;
+(define my-stream->list
+  (lambda (stream n)
+	  (cond ((stream-null? stream) '())
+		((zero? n) '())
+		(else (cons (stream-car stream)
+			    (my-stream->list (stream-cdr stream) (- n 1)))))))
+
+; list->stream
+; constructs a stream from a list
+;
+(define list->stream
+  (lambda (list)
+	  (cond ((null? list) (stream))
+		(else (stream-cons (car list)
+				   (list->stream (cdr list)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; other functions on streams
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; adding two streams
+(define stream-add
+  (lambda (stream1 stream2)
+	  (cond ((or (stream-null? stream1) (stream-null? stream2)) (stream))
+		(else (stream-cons (+ (stream-car stream1) (stream-car stream2))
+				   (stream-add (stream-cdr stream1) (stream-cdr stream2)))))))
+
+; map function on streams
+(define my-stream-map
+  (lambda (op stream)
+    ; [FILL IN]
+    empty-stream))
+
+; filter function on streams
+(define my-stream-filter
+  (lambda (test? stream)
+    ; [FILL IN]
+    empty-stream))
+           
+    
+; defining a stream of fibonacci numbers
+;  FIB(n) = FIB(n-1) + FIB(n-2) if n > 1
+;  FIB(1) = 1
+;  FIB(0) = 0
+(define fibonaccis
+  ; [FILL IN]
+  empty-stream))
+
+; defining a stream of (positive) rational numbers
+; a "rational" number is a pair (a . b) where a and b are positive integers
+; note: the stream should not contain any repeats
+; example:
+;  (1 . 1) (1 . 2) (2 . 1) (1 . 3) (3 . 1) (1 . 4) (2 . 3) (3 . 2) (4 . 1) (1 . 5) ... 
+(define rationals
+  ; [FILL IN]
+  empty-stream))
+
+
+;;;;;;;;;;;
+; test jig
+;;;;;;;;;;;
+
+(define test-me
+  (lambda (n)
+    (list (my-stream->list rationals n) 
+          (my-stream->list fibonaccis n)
+    	  (my-stream->list (my-stream-map sqr naturals) n)
+          (my-stream->list (my-stream-filter even? fibonaccis) n))))
