@@ -1,5 +1,6 @@
 #lang racket
 
+
 ; file->list
 ; reads a file of characters into a list
 ;
