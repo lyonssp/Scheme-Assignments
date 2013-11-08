@@ -1,0 +1,56 @@
+#lang racket
+
+#|main function
+(define formatter 
+  (lambda (input-filename output-filename line-length)
+    (stream->file output-filename
+      (right-justify line-length
+        (insert-newlines line-length
+          (remove-extra-spaces
+            (remove-newlines
+              (file->stream input-filename))))))))|#
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define insert-newlines 
+  (lambda (line-length str)
+    (letrec
+      ((insert 
+        (lambda (str count)
+	  (if (stream-null? str)
+	      str
+	      (let ((n (count-chars-to-next-space str)))
+	        (if (and (< count line-length) 
+		         (<= (+ n count) line-length))
+		    (cons-stream
+		      (stream-car str)
+		      (insert (stream-cdr str) (+ count 1)))
+		    (cons-stream
+		      #\newline
+		      (insert (trim-spaces str) 0))))))))
+      (insert (trim-spaces str) 0))))
+
+(define trim-spaces 
+  (lambda (str)
+    (cond ((stream-null? str) (stream))
+	  ((char=? (stream-car str) #\space)
+	   (trim-spaces (stream-cdr str)))
+	  (else str))))
+
+(define count-chars-to-next-space 
+  (lambda (str)
+    (letrec
+      ((count-ahead
+        (lambda (str count)
+	  (cond ((stream-null? str) count)
+	        ((char=? (stream-car str) #\space) count)
+	        (else (count-ahead (stream-cdr str) (+ count 1)))))))
+      (count-ahead str 0))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+(define remove-newlines
+  (lambda (str)
+    (cond ((stream-empty? str) empty-stream)
+          ((equal? (stream-car str) '#\newline') 
+           (stream-cons '#\space' (remove-newlines (stream-rest str))))
+          (else (stream-cons (stream-car str) (remove-newlines (stream-rest str)))))))

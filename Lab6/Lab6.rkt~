@@ -1,0 +1,5 @@
+#lang racket
+
+(define point 
+  (lambda (x y)
+    (cons (list x) (list y))))
