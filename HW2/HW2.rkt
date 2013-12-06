@@ -3,11 +3,6 @@
 (require "../Lab5/Lab5.rkt")
 (require racket/stream)
 
-(define writeln
-  (lambda (ls)
-    (write ls)
-    (newline)))
-
 ; macros (MIT Scheme to Racket)
 ; cons-stream ==> stream-cons
 (define stream-null? stream-empty?)
@@ -15,50 +10,10 @@
 (define stream-cdr stream-rest)
 (define null-stream empty-stream)
 
-(define str-accumulate
-  (lambda (op base term str)
-    (cond ((stream-null? str)
-           base)
-          (else
-           (op (term (stream-car str))
-               (str-accumulate op base term (stream-cdr str)))))))
-;;;;;;;;;;;;;;;;;;
-;Helper Functions;
-;;;;;;;;;;;;;;;;;;
-
-#|(define list->stream
-  (lambda (list)
-	  (cond ((null? list) (stream))
-		(else (stream-cons (car list)
-				   (list->stream (cdr list)))))))
-
-;Change stream of lists to stream of characters
-(define fix-stream
-  (lambda (str)
-    (cond ((null? str) (stream)) 
-          (stream-append (list->stream (stream-first str))
-                         (fix-stream (stream-cdr str))))))|#
-
-(define mix-cons
-  (lambda (ls str)
-    (cond ((null? ls) str)
-          (else (stream-cons (car ls)
-                             (mix-cons (cdr ls) str))))))
-
-(define to-stream-of-chars
-  (lambda (str-of-ls)
-    (cond ((stream-null? str-of-ls) (stream))
-          (else (stream-append (stream-car str-of-ls)
-                               (to-stream-of-chars (stream-cdr str-of-ls)))))))
-
-             
-      
-
-
 ;test function
 (define test-me
   (lambda (n)
-    (formatter "test.txt" "test2.txt" n)))
+    (formatter "hollow.txt" "out.txt" n)))
 
 ;main function
 (define formatter 
@@ -71,7 +26,17 @@
          (remove-newlines
           (file->stream input-filename)))))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;
+;HELPER FUNCTIONS
+;;;;;;;;;;;;;;;;;;;;;;;;
+(define str-accumulate
+  (lambda (op base term str)
+    (cond ((stream-null? str)
+           base)
+          (else
+           (op (term (stream-car str))
+               (str-accumulate op base term (stream-cdr str)))))))
+
 (define my-stream->list
   (lambda (stream n)
 	  (cond ((stream-null? stream) '())
@@ -79,6 +44,10 @@
 		(else (cons (stream-car stream)
 			    (my-stream->list (stream-cdr stream) (- n 1)))))))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;I/O FUNCTIONS
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define file->stream 
   (lambda (filename)
     (let ((in-port (open-input-file filename)))
