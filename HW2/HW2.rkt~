@@ -3,6 +3,11 @@
 (require "../Lab5/Lab5.rkt")
 (require racket/stream)
 
+(define writeln
+  (lambda (ls)
+    (write ls)
+    (newline)))
+
 ; macros (MIT Scheme to Racket)
 ; cons-stream ==> stream-cons
 (define stream-null? stream-empty?)
@@ -17,17 +22,40 @@
           (else
            (op (term (car ls))
                (accumulate op base term (cdr ls)))))))
+;;;;;;;;;;;;;;;;;;
+;Helper Functions;
+;;;;;;;;;;;;;;;;;;
 
+(define list->stream
+  (lambda (list)
+	  (cond ((null? list) (stream))
+		(else (stream-cons (car list)
+				   (list->stream (cdr list)))))))
+
+;Change stream of lists to stream of characters
+(define fix-stream
+  (lambda (str)
+    (cond ((null? str) (stream)) 
+          (stream-append (list->stream (stream-first str))
+                         (fix-stream (stream-cdr str))))))
+             
+      
+
+
+;test function
+(define test-me
+  (lambda (n)
+    (formatter "test.txt" "test2.txt" n)))
 
 ;main function
 (define formatter 
   (lambda (input-filename output-filename line-length)
     (stream->file output-filename
-      ;(right-justify line-length
+      (right-justify line-length
         (insert-newlines line-length
           (remove-extra-spaces
             (remove-newlines
-              (file->stream input-filename)))))))
+              (file->stream input-filename))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define my-stream->list
@@ -51,12 +79,16 @@
                   (stream-cons ch (build-input-stream)))))))
         (build-input-stream)))))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;Altered to write Streams containing lists;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define stream->file
   (lambda (filename str)
     (let ((out-port (open-output-file filename #:exists 'replace)))
       (letrec
           ((build-output-stream
-            (lambda (str) 
+            (lambda (str)
               (if (stream-empty? str)
                     (begin
                       (close-output-port out-port)
@@ -65,6 +97,7 @@
                       (write-char (stream-first str) out-port)
                       (build-output-stream (stream-rest str)))))))
         (build-output-stream str)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define insert-newlines
@@ -131,6 +164,12 @@
                              (remove-extra-spaces (stream-cdr str)))))))
                
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define spaces
+  (lambda (count)
+    (cond ((zero? count) '())
+          (else (append (list #\space)
+                        (spaces (- count 1)))))))
+
 (define delete
   (lambda (ls n)
     (if (= n 0) 
@@ -152,11 +191,12 @@
     (letrec
         ((helper
           (lambda ()
-            (if (char=? #\newline (stream-car text))
-                (stream)
-                (stream-cons (stream-car text)
-                             (text-car (stream-cdr text)))))))
-      (stream->list (helper)))))
+            (cond ((stream-null? text) (stream))
+                  ((char=? #\newline (stream-car text))
+                           (stream))
+                  (else (stream-cons (stream-car text)
+                                     (text-car (stream-cdr text))))))))
+      (helper))))
 
 ;;returns a body of text without the first line
 (define text-cdr
@@ -188,9 +228,30 @@
                       0))
                 ls)))
 
+(define justify
+  (lambda (ls spaces-needed gaps)
+    (let ((q (quotient spaces-needed gaps))
+          (r (modulo spaces-needed gaps)))
+    (letrec
+        ((helper
+          (lambda (list num-spaces extra-spaces)
+            (cond ((null? list) '())
+                  ((zero? extra-spaces)
+                   (if (char=? #\space (car list))
+                       (append (spaces (+ 1 num-spaces)) (helper (cdr list) num-spaces extra-spaces))
+                       (cons (car list) (helper (cdr list) num-spaces extra-spaces))))
+                  (else (if (char=? #\space (car list))
+                            (append (spaces (+ 2 num-spaces)) (helper (cdr list) num-spaces (- extra-spaces 1)))
+                            (cons (car list) (helper (cdr list) num-spaces extra-spaces))))))))
+      (helper ls q r)))))
+          
+
 (define right-justify
   (lambda (width str)
-    (let ((current-line (delete-trailing-spaces (text-car str)))
-          (spaces-needed (- width (count-line-chars current-line)))
-          ((spaces-to-insert (/ spaces-needed (count-line-spaces current-line)))))
-      
+    (let ((current-line (delete-trailing-space (text-car str))))
+      (let ((spaces-needed (- width (count-line-chars current-line)))
+            (gaps (count-line-spaces current-line)))
+        (cond ((stream-null? str) (stream))
+              (else 
+               (stream-append (list->stream (justify current-line spaces-needed gaps))
+                                 (right-justify width (text-cdr str)))))))))

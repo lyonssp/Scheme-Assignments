@@ -1,4 +1,37 @@
 #lang racket
+
+
+; file->list
+; reads a file of characters into a list
+;
+(define file->list
+  (lambda (filename) 
+    (let ((input-port (open-input-file filename))) 
+      (letrec 
+	((build-input-list 
+	   (lambda () 
+	     (let ((current-char (read-char input-port))) 
+	       (if (eof-object? current-char) 
+		 (begin (close-input-port input-port) 
+			'()) 
+		 (cons current-char (build-input-list))))))) 
+	(build-input-list)))))
+
+; list->file
+; writes a list of characters to a file
+;
+(define list->file
+  (lambda (filename ls) 
+    (let ((output-port (open-output-file filename)))
+      (letrec
+          ((helper
+            (lambda (ls)
+              (cond ((null? ls)
+                     (close-output-port output-port))
+                    (else (write-char (car ls) output-port)
+                          (helper (cdr ls)))))))
+        (helper ls)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Streams (infinite lists)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -57,14 +90,16 @@
 ; map function on streams
 (define my-stream-map
   (lambda (op stream)
-    ; [FILL IN]
-    empty-stream))
+    (stream-cons (op (stream-car stream))
+                 (my-stream-map op (stream-cdr stream)))))
 
 ; filter function on streams
 (define my-stream-filter
   (lambda (test? stream)
-    ; [FILL IN]
-    empty-stream))
+    (cond ((test? (stream-car stream))
+           (stream-cons (stream-car stream)
+                        (my-stream-filter test? (stream-cdr stream))))
+          (else (my-stream-filter test? (stream-cdr stream))))))
            
     
 ; defining a stream of fibonacci numbers
@@ -72,8 +107,9 @@
 ;  FIB(1) = 1
 ;  FIB(0) = 0
 (define fibonaccis
-  ; [FILL IN]
-  empty-stream))
+  (let helper ((m 0) (n 1))
+    (stream-cons (+ m n)
+                 (helper n (+ m n)))))
 
 ; defining a stream of (positive) rational numbers
 ; a "rational" number is a pair (a . b) where a and b are positive integers
@@ -81,8 +117,17 @@
 ; example:
 ;  (1 . 1) (1 . 2) (2 . 1) (1 . 3) (3 . 1) (1 . 4) (2 . 3) (3 . 2) (4 . 1) (1 . 5) ... 
 (define rationals
-  ; [FILL IN]
-  empty-stream))
+  (let helper ((p 1) (q 1))
+    (if (equal? (gcd p q) 1)
+        (stream-cons (cons p q)
+                     (cond ((equal? p 1)
+                            (helper (+ p 1) q))
+                           (else (helper (- p 1) (+ q 1)))))
+        (helper (- p 1) (+ q 1)))))
+           
+                 
+                 
+  
 
 
 ;;;;;;;;;;;

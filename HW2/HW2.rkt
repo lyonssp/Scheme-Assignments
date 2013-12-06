@@ -15,13 +15,45 @@
 (define stream-cdr stream-rest)
 (define null-stream empty-stream)
 
-(define accumulate
-  (lambda (op base term ls)
-    (cond ((null? ls)
+(define str-accumulate
+  (lambda (op base term str)
+    (cond ((stream-null? str)
            base)
           (else
-           (op (term (car ls))
-               (accumulate op base term (cdr ls)))))))
+           (op (term (stream-car str))
+               (str-accumulate op base term (stream-cdr str)))))))
+;;;;;;;;;;;;;;;;;;
+;Helper Functions;
+;;;;;;;;;;;;;;;;;;
+
+#|(define list->stream
+  (lambda (list)
+	  (cond ((null? list) (stream))
+		(else (stream-cons (car list)
+				   (list->stream (cdr list)))))))
+
+;Change stream of lists to stream of characters
+(define fix-stream
+  (lambda (str)
+    (cond ((null? str) (stream)) 
+          (stream-append (list->stream (stream-first str))
+                         (fix-stream (stream-cdr str))))))|#
+
+(define mix-cons
+  (lambda (ls str)
+    (cond ((null? ls) str)
+          (else (stream-cons (car ls)
+                             (mix-cons (cdr ls) str))))))
+
+(define to-stream-of-chars
+  (lambda (str-of-ls)
+    (cond ((stream-null? str-of-ls) (stream))
+          (else (stream-append (stream-car str-of-ls)
+                               (to-stream-of-chars (stream-cdr str-of-ls)))))))
+
+             
+      
+
 
 ;test function
 (define test-me
@@ -30,13 +62,14 @@
 
 ;main function
 (define formatter 
-  (lambda (input-filename output-filename line-length)
-    (stream->file output-filename
-      (right-justify line-length
-        (insert-newlines line-length
-          (remove-extra-spaces
-            (remove-newlines
-              (file->stream input-filename))))))))
+ (lambda (input-filename output-filename line-length)
+  (stream->file output-filename
+   (fix-lines line-length 
+    (right-justify line-length
+     (insert-newlines line-length
+       (remove-extra-spaces
+         (remove-newlines
+          (file->stream input-filename)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define my-stream->list
@@ -45,14 +78,6 @@
 		((zero? n) '())
 		(else (cons (stream-car stream)
 			    (my-stream->list (stream-cdr stream) (- n 1)))))))
-
-(define write-list
-  (lambda (ls output-port)
-    (cond ((null? ls) '())
-          (else 
-           (begin
-             (write-char (car ls) output-port)
-             (write-list (cdr ls) output-port))))))
 
 (define file->stream 
   (lambda (filename)
@@ -149,39 +174,58 @@
                              (remove-extra-spaces (stream-cdr str)))))))
                
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define str-length
+  (lambda (str)
+    (str-accumulate
+     +
+     0
+     (lambda (x) 1)
+     str)))
+
 (define spaces
   (lambda (count)
-    (cond ((zero? count) '())
-          (else (append (list #\space)
+    (cond ((zero? count) (stream))
+          (else (stream-cons #\space
                         (spaces (- count 1)))))))
 
-(define delete
-  (lambda (ls n)
-    (if (= n 0) 
-        (cdr ls)
-        (append (list (car ls)) (delete (cdr ls) (- n 1))))))
+(define stream-reverse
+  (lambda (str)
+    (cond ((stream-null? str) (stream))
+          (else (stream-append (stream-reverse (stream-cdr str))
+                               (stream (stream-car str)))))))
+    
+    
+(define str-delete
+  (lambda (str index)
+    (let ((count 0))
+      (letrec 
+          ((helper
+            (lambda (strm count)
+              (cond ((stream-null? strm) (stream))
+                    ((equal? count index)
+                     (helper (stream-cdr strm) (+ count 1)))
+                    (else (stream-cons (stream-car strm)
+                                       (helper (stream-cdr strm) (+ count 1))))))))
+        (helper str 0)))))
 
-(define ls-last
-  (lambda (list)
-    (car (reverse list)))) 
+(define line-last
+  (lambda (str)
+    (stream-car (stream-reverse str))))
 
 (define delete-trailing-space
-  (lambda (ls)
-    (if (char=? #\space (ls-last ls))
-        (delete ls (- (length ls) 1))
-        ls)))
+  (lambda (str)
+    (if (char=? #\space (line-last str))
+        (str-delete str (- (str-length str) 1))
+        str)))
+
 ;;returns first line of a body of text
 (define text-car
   (lambda (text)
-    (letrec
-        ((helper
-          (lambda ()
-            (cond ((stream-null? text) (stream)) 
-                  ((char=? #\newline (stream-car text))
-                           (stream))
-                  (else (stream-cons (stream-car text)
-                                     (text-car (stream-cdr text))))))))
-      (stream->list (helper)))))
+    (cond ((stream-null? text) (stream))
+          ((char=? #\newline (stream-car text))
+           (stream))
+          (else (stream-cons (stream-car text)
+                             (text-car (stream-cdr text)))))))
 
 ;;returns a body of text without the first line
 (define text-cdr
@@ -189,55 +233,66 @@
     (letrec
         ((helper
           (lambda (str)
-            (if (stream-null? str) 
+            (if (stream-null? str)
                 (stream)
                 (stream-cons (stream-car str)
                              (helper (stream-cdr str)))))))
-      (cond ((char=? #\newline (stream-car text))
+      (cond ((stream-null? text) (stream))
+            ((char=? #\newline (stream-car text))
              (helper (stream-cdr text)))
             (else (text-cdr (stream-cdr text)))))))
-            
 
 (define count-line-chars
   (lambda (str)
-    (let ((line (stream->list str)))
-    (accumulate + 0 (lambda (x) 1) line))))
+      (str-accumulate + 0 (lambda (x) 1) str)))
 
 (define count-line-spaces
-  (lambda (ls)
-    (accumulate + 
-                0 
-                (lambda (x) 
+  (lambda (str)
+    (str-accumulate + 
+                0
+                (lambda (x)
                   (if (char=? #\space x)
                       1
                       0))
-                ls)))
+                str)))
 
 (define justify
-  (lambda (ls spaces-needed gaps)
+  (lambda (line spaces-needed gaps)
     (let ((q (quotient spaces-needed gaps))
-          (r (modulo spaces-needed gaps)))
+          (r (remainder spaces-needed gaps)))
     (letrec
         ((helper
-          (lambda (list num-spaces extra-spaces)
-            (cond ((null? list) '())
+          (lambda (stream num-spaces extra-spaces)
+            (cond ((stream-null? stream) empty-stream)
                   ((zero? extra-spaces)
-                   (if (char=? #\space (car list))
-                       (append (spaces (+ 1 num-spaces)) (helper (cdr list) num-spaces extra-spaces))
-                       (cons (car list) (helper (cdr list) num-spaces extra-spaces))))
-                  (else (if (char=? #\space (car list))
-                            (append (spaces (+ 2 num-spaces)) (helper (cdr list) num-spaces (- extra-spaces 1)))
-                            (cons (car list) (helper (cdr list) num-spaces extra-spaces))))))))
-      (helper ls q r)))))
+                   (if (char=? #\space (stream-car stream))
+                       (stream-append (spaces (+ 1 num-spaces)) (helper (stream-cdr stream) num-spaces extra-spaces)) ;;Append existing space + number of spaces to distribute
+                       (stream-cons (stream-car stream) (helper (stream-cdr stream) num-spaces extra-spaces))))
+                  (else (if (char=? #\space (stream-car stream))
+                            (stream-append (spaces (+ 2 num-spaces)) (helper (stream-cdr stream) num-spaces (- extra-spaces 1))) ;;Append existing space  + one available extra space + number of spaces to distribute
+                            (stream-cons (stream-car stream) (helper (stream-cdr stream) num-spaces extra-spaces))))))))
+      (helper line q r)))))
           
-
 (define right-justify
   (lambda (width str)
-    (let ((current-line (delete-trailing-space (text-car str))))
-      (let ((spaces-needed (- width (count-line-chars current-line)))
-            (gaps (count-line-spaces current-line)))
-        (writeln (list "gaps = " gaps))
-        (cond ((stream-null? str) (stream))
-              (else (stream-cons (justify current-line spaces-needed gaps)
-                                 (right-justify width (text-cdr str)))))))))      
-      
+    (if (not (stream-null? str))
+        (let ((current-line (delete-trailing-space (text-car str))))
+          (let ((spaces-needed (- width (count-line-chars current-line)))
+                (gaps (count-line-spaces current-line)))
+            (stream-append (justify current-line spaces-needed gaps)
+                                  (right-justify width (text-cdr str)))))
+        (stream))))
+
+(define fix-lines
+  (lambda (width str)
+      (letrec 
+          ((helper
+            (lambda (stream width index)
+              (cond ((stream-null? stream) empty-stream)
+                    ((equal? (remainder index (+ width 1)) 0)
+                     (stream-cons #\newline (helper stream
+                                                    width
+                                                    (+ index 1))))
+                    (else (stream-cons (stream-car stream) 
+                                       (helper (stream-cdr stream) width (+ index 1))))))))
+        (helper str width 1))))
