@@ -1,7 +1,13 @@
 #lang racket
 
-(require "../Lab5/Lab5.rkt")
 (require racket/stream)
+
+;Stream Constructor
+;(define stream
+;  (lambda args
+;    (cond ((null? args) empty-stream)
+;          (else stream-cons (car args)
+;                (stream (cdr args))))))
 
 ; macros (MIT Scheme to Racket)
 ; cons-stream ==> stream-cons
@@ -29,6 +35,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ;HELPER FUNCTIONS
 ;;;;;;;;;;;;;;;;;;;;;;;;
+;;Accumulate on stream
 (define str-accumulate
   (lambda (op base term str)
     (cond ((stream-null? str)
@@ -37,6 +44,7 @@
            (op (term (stream-car str))
                (str-accumulate op base term (stream-cdr str)))))))
 
+;;Return stream's first n elements as a list
 (define my-stream->list
   (lambda (stream n)
 	  (cond ((stream-null? stream) '())

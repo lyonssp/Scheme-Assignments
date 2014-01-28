@@ -1,15 +1,15 @@
 #lang racket/gui
 (require racket/class)
-(require "../Lab6/Lab6.rkt")
 
 
+;Frame axis is configured with the origin in the top left corner
+;of the window and the coordinate containing the x and y boundaries
+;in the bottom right corner of the window
 (define frame (new frame%
                    (label "Canvas")
                    (width 500)
                    (height 500)
                    ))
-
-
 
 (define draw-point
   (lambda (point)
@@ -19,19 +19,29 @@
 (define point-obj
   (class object%
     (super-new)
-    (init-field x y (depth 1))
+    (init-field x y [depth 1])
+    
+    ;return x coordinate of point
     (define/public get-x
       (lambda ()
         x))
+    
+    ;return y coordinate of point
     (define/public get-y
       (lambda ()
         y))
+
+    ;what type of object is this
     (define/public type?
       (lambda ()
       'point))
+    
+    ;return depth in comparison to other objects
     (define/public depth?
       (lambda ()
         depth))
+    
+    ;will draw a point
     (define/public draw
       (lambda ()
         (send dc set-pen "white" 1 'solid)
@@ -74,19 +84,19 @@
 (define rectangle%
   (class object%
     (super-new)
-    (init-field pointx pointy (color '()) (depth 1))
+    (init-field x y (color '()) [depth 1])
     (define/public get-x
       (lambda ()
-        (send pointx get-x)))
+        (send x get-x)))
     (define/public get-y
       (lambda ()
-        (send pointx get-y)))
+        (send x get-y)))
     (define/public get-width
       (lambda ()
-        (abs(- (send pointx get-x) (send pointy get-x)))))
+        (abs(- (send x get-x) (send y get-x)))))
     (define/public get-height
       (lambda ()
-        (abs(- (send pointx get-y) (send pointy get-y)))))
+        (abs(- (send x get-y) (send y get-y)))))
     (define/public get-color
       (lambda ()
         color))
@@ -105,16 +115,16 @@
   ))
 
 (define rectangle
-  (lambda (pointx pointy (color '()) (depth 1))
-    (new rectangle% (pointx pointx) (pointy pointy) (color color) (depth depth))))
+  (lambda (x y (color '()) (depth 1))
+    (new rectangle% (x x) (y y) (color color) (depth depth))))
 
 (define draw-rectangle
-  (lambda (rec)
-    (cond ((equal? (send rec get-color) '()) (send dc set-pen "white" 1 'solid) (send dc set-brush "white" 'transparent) 
-                                                       (send dc draw-rectangle (send rec get-x) (send rec get-y) (send rec get-width) (send rec get-height))) 
-          (else (send dc set-pen (send rec get-color) 1 'solid) (send dc set-brush (send rec get-color) 'solid)
-                (send dc draw-rectangle (send rec get-x) (send rec get-y) (send rec get-width) (send rec get-height))))
-    (send dc draw-rectangle (send rec get-x) (send rec get-y) (send rec get-width) (send rec get-height))))
+  (lambda (rectangle-obj)
+    (cond ((equal? (send rectangle-obj get-color) '()) (send dc set-pen "white" 1 'solid) (send dc set-brush "white" 'transparent) 
+                                                       (send dc draw-rectangle (send rectangle-obj get-x) (send rectangle-obj get-y) (send rectangle-obj get-width) (send rectangle-obj get-height))) 
+          (else (send dc set-pen (send rectangle-obj get-color) 1 'solid) (send dc set-brush (send rectangle-obj get-color) 'solid)
+                (send dc draw-rectangle (send rectangle-obj get-x) (send rectangle-obj get-y) (send rectangle-obj get-width) (send rectangle-obj get-height))))
+    (send dc draw-rectangle (send rectangle-obj get-x) (send rectangle-obj get-y) (send rectangle-obj get-width) (send rectangle-obj get-height))))
     
 (define rectangle?
   (lambda (object)
@@ -193,20 +203,20 @@
       (lambda ()
       'scene))
     
-    (define lessthandepth
+    (define lower-depth?
       (lambda (a b)
         (cond ((< (depth a) (depth b)) #t)
           (else #f))))
     
     (define/public draw
       (lambda ()
-        (for-each (lambda (arg) (send arg draw)) (sort objects lessthandepth))
+        (for-each (lambda (arg) (send arg draw)) (sort objects lower-depth?))
         ))
     ))
 
 
 
-(define animate-me
+(define animate
  (lambda ()
    (define -scene- (scene (list (rectangle (point 50 300) (point 450 400) "yellow" 2) ;;crown base
                             (rectangle (point 75 200) (point 125 300) "yellow" 2) ;;
@@ -224,4 +234,4 @@
                             ))) 
    (draw -scene-)))
 
-(animate-me)
+(animate)
